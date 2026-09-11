@@ -25,16 +25,41 @@ app.post('/api/save-score', (req, res) => {
     const { name, score } = req.body;
 
     const sql = `INSERT INTO scores (name, score) VALUES (?, ?)`;
+
     db.run(sql, [name, score], function(err) {
         if (err) {
             return res.status(400).json({ error: err.message });
         }
-        res.json({ message: "Puntaje guardado exitosamente", id: this.lastID });
+
+        res.json({
+            message: "Puntaje guardado exitosamente",
+            id: this.lastID
+        });
+    });
+});
+
+// 3. Ruta para obtener los 5 mejores puntajes
+app.get('/api/top-scores', (req, res) => {
+
+    const sql = `
+        SELECT name, score
+        FROM scores
+        ORDER BY score DESC
+        LIMIT 5
+    `;
+
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(400).json({ error: err.message });
+        }
+
+        res.json(rows);
     });
 });
 
 // Iniciar servidor
 const PORT = 3000;
+
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

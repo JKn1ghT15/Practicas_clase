@@ -4,82 +4,284 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Juego de Probabilidad</title>
+
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-        button { padding: 10px 20px; font-size: 16px; margin: 10px; cursor: pointer; }
-        h1 { font-size: 3rem; color: #333; }
-        #message { margin-top: 20px; font-weight: bold; color: #0066cc; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #333;
+        }
+
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+
+        /* Tabla de mejores puntajes */
+        #leaderboard {
+            margin: 40px auto;
+            border-collapse: collapse;
+            width: 400px;
+        }
+
+        #leaderboard th,
+        #leaderboard td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        #leaderboard th {
+            background-color: #333;
+            color: white;
+        }
+
+        #leaderboard tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
+
 <body>
 
     <h2>Tu Puntaje Actual</h2>
+
     <h1 id="scoreDisplay">0</h1>
 
     <button id="btnRoll">🎲 Roll</button>
+
     <button id="btnSurrender">🏳️ Rendirse</button>
 
-    <div id="message">¡Presiona Roll para empezar a jugar!</div>
+    <div id="message">
+        ¡Presiona Roll para empezar a jugar!
+    </div>
+
+
+    <!-- TABLA DE MEJORES PUNTAJES -->
+
+    <h2>🏆 Mejores 5 Puntajes</h2>
+
+    <table id="leaderboard">
+
+        <thead>
+            <tr>
+                <th>Posición</th>
+                <th>Jugador</th>
+                <th>Puntaje</th>
+            </tr>
+        </thead>
+
+        <tbody id="leaderboardBody">
+            <!-- Aquí JavaScript colocará los 5 mejores puntajes -->
+        </tbody>
+
+    </table>
+
 
     <script>
-        let score = 0;
-        const btnRoll = document.getElementById('btnRoll');
-        const btnSurrender = document.getElementById('btnSurrender');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const messageDisplay = document.getElementById('message');
 
-        // Lógica del botón Roll
+        let score = 0;
+
+        const btnRoll = document.getElementById('btnRoll');
+
+        const btnSurrender =
+            document.getElementById('btnSurrender');
+
+        const scoreDisplay =
+            document.getElementById('scoreDisplay');
+
+        const messageDisplay =
+            document.getElementById('message');
+
+        const leaderboardBody =
+            document.getElementById('leaderboardBody');
+
+
+        // =====================================================
+        // FUNCIÓN PARA MOSTRAR LOS 5 MEJORES PUNTAJES
+        // =====================================================
+
+        async function cargarMejoresPuntajes() {
+
+            try {
+
+                const response =
+                    await fetch('/api/top-scores');
+
+                const scores =
+                    await response.json();
+
+                leaderboardBody.innerHTML = '';
+
+                scores.forEach((player, index) => {
+
+                    const row =
+                        document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${player.name}</td>
+                        <td>${player.score}</td>
+                    `;
+
+                    leaderboardBody.appendChild(row);
+
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "Error al cargar los puntajes:",
+                    error
+                );
+
+            }
+        }
+
+
+        // =====================================================
+        // LÓGICA DEL BOTÓN ROLL
+        // =====================================================
+
         btnRoll.addEventListener('click', () => {
-            const rand = Math.random(); // Genera un número entre 0 y 1
+
+            const rand = Math.random();
+
             let points = 0;
 
             if (rand < 0.60) {
-                points = 1; // 60% de probabilidad
+
+                points = 1;
+
             } else if (rand < 0.90) {
-                points = 2; // 30% de probabilidad
+
+                points = 2;
+
             } else {
-                points = 10; // 10% de probabilidad
+
+                points = 10;
+
             }
 
             score += points;
+
             scoreDisplay.textContent = score;
-            messageDisplay.textContent = `¡Ganaste ${points} punto(s)!`;
+
+            messageDisplay.textContent =
+                `¡Ganaste ${points} punto(s)!`;
+
         });
 
-        // Lógica del botón Rendirse
+
+        // =====================================================
+        // LÓGICA DEL BOTÓN RENDIRSE
+        // =====================================================
+
         btnSurrender.addEventListener('click', async () => {
-            // Terminar el juego (deshabilitar botones)
+
+            // Terminar el juego
             btnRoll.disabled = true;
+
             btnSurrender.disabled = true;
 
-            const playerName = prompt("Juego terminado. Ingresa tu nombre para guardar el puntaje:");
+
+            const playerName =
+                prompt(
+                    "Juego terminado. Ingresa tu nombre para guardar el puntaje:"
+                );
+
 
             if (playerName) {
-                messageDisplay.textContent = "Guardando puntaje...";
 
-                // Enviar datos al backend (Node.js) para guardar en SQLite
+                messageDisplay.textContent =
+                    "Guardando puntaje...";
+
+
+                // Enviar datos al backend
                 try {
-                    const response = await fetch('/api/save-score', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: playerName, score: score })
-                    });
 
-                    const result = await response.json();
-                    if(response.ok) {
-                        messageDisplay.textContent = `¡Excelente ${playerName}! Tu puntaje final de ${score} ha sido guardado.`;
+                    const response =
+                        await fetch('/api/save-score', {
+
+                            method: 'POST',
+
+                            headers: {
+                                'Content-Type':
+                                    'application/json'
+                            },
+
+                            body: JSON.stringify({
+                                name: playerName,
+                                score: score
+                            })
+
+                        });
+
+
+                    const result =
+                        await response.json();
+
+
+                    if (response.ok) {
+
+                        messageDisplay.textContent =
+                            `¡Excelente ${playerName}! Tu puntaje final de ${score} ha sido guardado.`;
+
+                        // Actualizar la tabla
+                        cargarMejoresPuntajes();
+
                     } else {
-                        messageDisplay.textContent = "Hubo un error al guardar el puntaje.";
+
+                        messageDisplay.textContent =
+                            "Hubo un error al guardar el puntaje.";
+
                     }
+
+
                 } catch (error) {
-                    console.error("Error:", error);
-                    messageDisplay.textContent = "No se pudo conectar con el servidor.";
+
+                    console.error(
+                        "Error:",
+                        error
+                    );
+
+                    messageDisplay.textContent =
+                        "No se pudo conectar con el servidor.";
+
                 }
+
+
             } else {
-                messageDisplay.textContent = `Juego terminado con ${score} puntos. (No guardado)`;
+
+                messageDisplay.textContent =
+                    `Juego terminado con ${score} puntos. (No guardado)`;
+
             }
+
         });
+
+
+        // =====================================================
+        // CARGAR LOS PUNTAJES AL ABRIR LA PÁGINA
+        // =====================================================
+
+        cargarMejoresPuntajes();
+
     </script>
+
 </body>
 </html>
